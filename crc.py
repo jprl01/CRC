@@ -1,4 +1,6 @@
 import matplotlib.pyplot as plt
+import matplotlib.pyplot as np
+
 import itertools
 import random
 import copy
@@ -137,6 +139,7 @@ class Schelling:
         self.empty_houses.append((x, y))
 
     def plot(self, title, file_name):
+        plt.clf()
         fig, ax = plt.subplots()
         #If you want to run the simulation with more than 7 colors, you should set agent_colors accordingly
         agent_colors = {1:'b', 2:'r', 3:'g', 4:'c', 5:'m', 6:'y', 7:'k'}
@@ -204,17 +207,62 @@ class Schelling:
                 similarity.append(1)
         return sum(similarity)/len(similarity)
     
+
+    def satisfatory_percentage(self,races,similarity_threshold,empty_ratio):
+        x = list(range(1,races+1))
+        x_names = [str(z) for z in x][:-1]
+
+        x_names = x_names + ["total"]
+        y = []
+        plt.clf()
+        total_unsatisfy = 0
+        total = 0 
+        for i in range(1,races):
+            total_raca = 0
+            unsatisfy = 0 
+            for agent in self.agents:
+                race = self.agents[agent]
+                if (i == race):
+                    if  self.is_unsatisfied(agent[0], agent[1]):
+                        unsatisfy = unsatisfy + 1
+                        total_unsatisfy = total_unsatisfy + 1
+                    total_raca = total_raca + 1 
+                    total = total + 1   
+            #print(total_raca," ",unsatisfy,' ',race ) 
+            pergentage = unsatisfy/total_raca * 100
+            y = y+[pergentage]
+
+        pergentage_total  = total_unsatisfy/total * 100
+        y = y+[pergentage_total]
+
+        y_min =min (y) - 2.5
+        y_max =max (y) + 2.5
+        
+        print(y)
+
+        if(y_min < 0):
+            y_min = 0
+
+        if(y_max > 100):
+            y_max = 100
+
+        plt.ylim(y_min,y_max)
+        plt.xticks(x, x_names)
+        plt.bar(x, y) 
+        plt.xlabel('x - races') 
+        plt.ylabel('y - percentage unsatisfied') 
+        title = "race unsatisfied with " + str(similarity_threshold) + " and " + str(empty_ratio) + "% empty_ratio"
+        plt.title(title) 
+        plt.savefig(title+".png") 
     
-
-
-similarity_threshold = 0.75
+similarity_threshold = 0.50
 width = 35
 height = 35 
 empty_ratio = 0.01
 n_iterations = 500
 races = 2
 condition=0
-docs = open("simularity.txt",'a+')
+docs = open("simularity.txt",'a')
 
 for i in range (2,8):
     races = i
@@ -229,4 +277,4 @@ for i in range (2,8):
     #print(docs.read())
     titlefinal='Schelling Model with'+str(races)+'colors: Final State with Similarity Threshold '+str(similarity_threshold*100)+'%'
     schelling_1.plot(titlefinal, ('schelling_2_ with '+str(races)+"color "+str(similarity_threshold*100)+'%''_final.png'))
-
+    schelling_1.satisfatory_percentage(i+1,similarity_threshold,empty_ratio)
