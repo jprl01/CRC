@@ -206,7 +206,23 @@ class Schelling:
             except:
                 similarity.append(1)
         return sum(similarity)/len(similarity)
-    
+
+
+    def calculate_happiness(self):
+        total = 0
+        count_similar = 0
+
+        for agent in self.agents:
+            x = agent[0]
+            y = agent[1]
+            if(not self.is_unsatisfied(x,y)):
+                count_similar= count_similar + 1
+            total = total + 1 
+        
+
+        return count_similar / total
+
+
 
     def satisfatory_percentage(self,races,similarity_threshold,empty_ratio):
         x = list(range(1,races+1))
@@ -290,6 +306,7 @@ def simularitycomparethreshold(similarity_threshold = 0.90,width = 35,height = 3
                                  races = 2,condition=0):
     listsimilarity = []
     listthreshold  = []
+    similarity_threshold = 0.1
     while (similarity_threshold<1) : 
         schelling_1 = Schelling(width, height,empty_ratio,similarity_threshold, n_iterations, races)
         schelling_1.populate()
@@ -354,34 +371,60 @@ def same_threshold_different_empty(similarity_threshold = 0.75,width = 35,height
     plt.ylabel('y - percentage similarity') 
 
 
-'''
-def exm_same_threshold_different_empty(similarity_threshold = 0.5,width = 35,height = 35, empty_ratio = 0.01,n_iterations = 500 ,\
+def multipleraces_dif_threshold_cal_hapiness(similarity_threshold = 0.10,width = 35,height = 35, empty_ratio = 0.01,n_iterations = 500 ,\
                                  races = 2,condition=0):
-    list_empty_ratio = []
-    listsimilarity  = []
-    empty_ratio = 0.1
-    while (empty_ratio<0.5) : 
+   
+    #docs = open("happiness.txt",'a')
+    list_hapiness = []
+    listthreshold  = []
+    while (similarity_threshold<1) : 
         schelling_1 = Schelling(width, height,empty_ratio,similarity_threshold, n_iterations, races)
         schelling_1.populate()
 
         schelling_1.update(condition)
-        total = schelling_1.calculate_similarity()
 
-        listsimilarity=listsimilarity + [total]
-        list_empty_ratio = list_empty_ratio + [empty_ratio]   
-        empty_ratio = empty_ratio+0.05
+        list_hapiness=list_hapiness + [schelling_1.calculate_happiness()]
+        listthreshold = listthreshold + [similarity_threshold]   
+        similarity_threshold = similarity_threshold+0.1
     
     labeltext =  "race "+str(races)
-    plt.plot(list_empty_ratio, listsimilarity,label = labeltext) 
+    plt.plot(listthreshold, list_hapiness,label = labeltext) 
+    plt.xlabel('x - similarity_threshold') 
+    plt.ylabel('y - percentage hapiness') 
+    #plt.savefig("happiness"+".png") 
+    #schelling_1.satisfatory_percentage(i+1,similarity_threshold,empty_ratio)
+
+def same_threshold_different_empty_happiness(similarity_threshold = 0.75,width = 35,height = 35, empty_ratio = 0.01,n_iterations = 500 ,\
+                                 races = 2,condition=0):
+    list_empty_ratio = []
+    listhapiness  = []
+    empty_ratio = 0.1
+    while (empty_ratio<=1) : 
+        total = 0
+        
+        #for _ in range(1,4):
+        schelling_1 = Schelling(width, height,empty_ratio,similarity_threshold, n_iterations, races)
+        schelling_1.populate()
+
+        schelling_1.update(condition)
+        total = total + schelling_1.calculate_happiness()
+        
+        #total = total/3
+
+        listhapiness=listhapiness + [total]
+        list_empty_ratio = list_empty_ratio + [empty_ratio]   
+        empty_ratio = empty_ratio+0.1
+    
+    labeltext =  "race "+str(races)
+    plt.plot(list_empty_ratio, listhapiness,label = labeltext) 
     plt.xlabel('x - empty_ratio') 
-    plt.ylabel('y - percentage similarity') 
-'''
+    plt.ylabel('y - percentage happiness') 
 
 
 
 plt.clf()
 for i in range (2,8):
-    same_threshold_different_empty(races=i)
+    same_threshold_different_empty_happiness(races=i)
 
 plt.legend() 
-plt.savefig("simularity2"+".png") 
+plt.savefig("happiness"+".png") 
