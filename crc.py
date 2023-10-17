@@ -17,6 +17,8 @@ class Schelling:
         self.n_iterations = n_iterations
         self.empty_houses = []
         self.agents = {}
+        self.test_threshold = 0.0
+
     
     def populate(self):
         self.all_houses = list(itertools.product(range(self.width),range(self.height)))
@@ -85,8 +87,8 @@ class Schelling:
         if (count_similar+count_different) == 0:
             return False
         else:
-            return float(count_similar)/(count_similar+count_different) < self.similarity_threshold
-    
+            return  float(count_similar)/(count_similar+count_different) > self.test_threshold or  float(count_similar)/(count_similar+count_different) < self.similarity_threshold
+
 
     def neighborhood(self,x,y,empty_house):
 
@@ -110,24 +112,29 @@ class Schelling:
         return False
 
 
-    def update(self,condition):
-        for i in range(self.n_iterations):
+    def update(self,x=[],y=[],j=0):
+        n_iteration = self.n_iterations+j
+        for i in range(n_iteration):
             self.old_agents = copy.deepcopy(self.agents)
             n_changes = 0
             for agent in self.old_agents:
                 if self.is_unsatisfied(agent[0], agent[1]):
                     n_changes += 1
                     agent_race = self.agents[agent]
-                    empty_house = random.choice(self.empty_houses)
-                    if(condition==1 and not self.neighborhood(agent[0],agent[1],empty_house)):
-                        continue       
+                    empty_house = random.choice(self.empty_houses)       
                     self.agents[empty_house] = agent_race
                     del self.agents[agent]
                     self.empty_houses.remove(empty_house)
-                    self.empty_houses.append(agent)           
+                    self.empty_houses.append(agent)
+            j=j+1
+            y=y+[self.calculate_similarity()]
+            x=x+[j]
             print(n_changes)
             if n_changes == 0:
                 break
+            
+
+        return x,y,j
 
 
     def move_to_empty(self, x, y):
@@ -215,7 +222,7 @@ class Schelling:
         for agent in self.agents:
             x = agent[0]
             y = agent[1]
-            if(not self.is_unsatisfied(x,y)):
+            if(not self.is_unsatisfied(x,y,True)):
                 count_similar= count_similar + 1
             total = total + 1 
         
@@ -303,7 +310,7 @@ class Schelling:
         
 
 def simularitycomparethreshold(similarity_threshold = 0.90,width = 35,height = 35, empty_ratio = 0.01,n_iterations = 500 ,\
-                                 races = 2,condition=0):
+                                 races = 2):
     listsimilarity = []
     listthreshold  = []
     similarity_threshold = 0.1
@@ -311,7 +318,7 @@ def simularitycomparethreshold(similarity_threshold = 0.90,width = 35,height = 3
         schelling_1 = Schelling(width, height,empty_ratio,similarity_threshold, n_iterations, races)
         schelling_1.populate()
 
-        schelling_1.update(condition)
+        schelling_1.update()
 
         listsimilarity=listsimilarity + [schelling_1.calculate_similarity()]
         listthreshold = listthreshold + [similarity_threshold]   
@@ -337,7 +344,7 @@ def multipleraces_same_threshold(similarity_threshold = 0.90,width = 35,height =
         schelling_1.populate()
         schelling_1.plot('Schelling Model with '+str(races)+' colors: Initial State', 'schelling_2_initial '+str(races)+'.png')
 
-        schelling_1.update(condition)
+        schelling_1.update()
         write = "calculate_similarity race "+str(races)+": "+ str(schelling_1.calculate_similarity())+"\n"
         docs.write(write)
         #print(docs.read())
@@ -351,15 +358,15 @@ def same_threshold_different_empty(similarity_threshold = 0.75,width = 35,height
     list_empty_ratio = []
     listsimilarity  = []
     empty_ratio = 0.1
-    while (empty_ratio<0.5) : 
+    while (empty_ratio<=1) : 
         total = 0
-        for _ in range(1,4):
-            schelling_1 = Schelling(width, height,empty_ratio,similarity_threshold, n_iterations, races)
-            schelling_1.populate()
+        #for _ in range(1,4):
+        schelling_1 = Schelling(width, height,empty_ratio,similarity_threshold, n_iterations, races)
+        schelling_1.populate()
 
-            schelling_1.update(condition)
-            total = total + schelling_1.calculate_similarity()
-        total = total/3
+        schelling_1.update()
+        total = total + schelling_1.calculate_similarity()
+        #total = total/3
 
         listsimilarity=listsimilarity + [total]
         list_empty_ratio = list_empty_ratio + [empty_ratio]   
@@ -381,7 +388,7 @@ def multipleraces_dif_threshold_cal_hapiness(similarity_threshold = 0.10,width =
         schelling_1 = Schelling(width, height,empty_ratio,similarity_threshold, n_iterations, races)
         schelling_1.populate()
 
-        schelling_1.update(condition)
+        schelling_1.update()
 
         list_hapiness=list_hapiness + [schelling_1.calculate_happiness()]
         listthreshold = listthreshold + [similarity_threshold]   
@@ -395,18 +402,18 @@ def multipleraces_dif_threshold_cal_hapiness(similarity_threshold = 0.10,width =
     #schelling_1.satisfatory_percentage(i+1,similarity_threshold,empty_ratio)
 
 def same_threshold_different_empty_happiness(similarity_threshold = 0.75,width = 35,height = 35, empty_ratio = 0.01,n_iterations = 500 ,\
-                                 races = 2,condition=0):
+                                 races = 2,condition=0,xlabel="x - empty_ratio",ylabel = "y - percentage happiness"):
     list_empty_ratio = []
     listhapiness  = []
-    empty_ratio = 0.1
-    while (empty_ratio<=1) : 
+    max_ratio = 0.75
+    while (empty_ratio<=max_ratio) : 
         total = 0
         
         #for _ in range(1,4):
         schelling_1 = Schelling(width, height,empty_ratio,similarity_threshold, n_iterations, races)
         schelling_1.populate()
 
-        schelling_1.update(condition)
+        schelling_1.update()
         total = total + schelling_1.calculate_happiness()
         
         #total = total/3
@@ -417,14 +424,125 @@ def same_threshold_different_empty_happiness(similarity_threshold = 0.75,width =
     
     labeltext =  "race "+str(races)
     plt.plot(list_empty_ratio, listhapiness,label = labeltext) 
-    plt.xlabel('x - empty_ratio') 
-    plt.ylabel('y - percentage happiness') 
+    plt.xlabel(xlabel) 
+    plt.ylabel(ylabel) 
+
+
+def diff_grid_size_happiness(similarity_threshold = 0.75,width = 35,height = 35, empty_ratio = 0.01,n_iterations = 500 ,\
+                                 races = 2,condition=0):
+    list_grid_size = []
+    listhapiness  = []
+    max_ratio = 100
+    grid_size = 15
+    while (grid_size<=max_ratio) : 
+        total = 0
+        
+        #for _ in range(1,4):
+        schelling_1 = Schelling(grid_size, grid_size,empty_ratio,similarity_threshold, n_iterations, races)
+        schelling_1.populate()
+
+        schelling_1.update()
+        total = total + schelling_1.calculate_happiness()
+        
+        #total = total/3
+
+        listhapiness=listhapiness + [total]
+        list_grid_size = list_grid_size + [str(grid_size)+"x"+str(grid_size)]   
+        grid_size = grid_size+20
+    
+    labeltext =  "race "+str(races)
+    plt.plot(list_grid_size, listhapiness,label = labeltext) 
+    plt.xlabel("x - grid size") 
+    plt.ylabel("y - percentage happiness") 
+
+def diff_grid_size_similarity(similarity_threshold = 0.75,width = 35,height = 35, empty_ratio = 0.20,n_iterations = 500 ,\
+                                 races = 2,condition=0):
+    list_grid_size = []
+    listsimilarity = []
+    max_ratio = 100
+    grid_size = 15
+    while (grid_size<=max_ratio) : 
+        total = 0
+        
+        #for _ in range(1,4):
+        schelling_1 = Schelling(grid_size, grid_size,empty_ratio,similarity_threshold, n_iterations, races)
+        schelling_1.populate()
+
+        schelling_1.update()
+        
+        total = total + schelling_1.calculate_similarity()
+        
+        #total = total/3
+
+        listsimilarity=listsimilarity + [total]
+        list_grid_size = list_grid_size + [str(grid_size)+"x"+str(grid_size)]   
+        grid_size = grid_size+20
+    
+    labeltext =  "race "+str(races)
+    plt.plot(list_grid_size, listsimilarity,label = labeltext) 
+    plt.xlabel("x - grid size") 
+    plt.ylabel("y - percentage similarity") 
+
+
+
+def change_threshold_in_middle_fase(similarity_threshold = 0.75,width = 35,height = 35, empty_ratio = 0.01,n_iterations = 500 ,\
+                                 races = 2,condition=0):
+   
+    #docs = open("simularity.txt",'a')
+
+    for i in range (2,3):
+        races = i
+
+        schelling_1 = Schelling(width, height,empty_ratio,similarity_threshold, n_iterations, races)
+        schelling_1.populate()
+        #schelling_1.plot('Schelling Model with '+str(races)+' colors: Initial State', 'schelling_2_initial '+str(races)+'.png')
+        schelling_1.test_threshold=1
+
+        x,y,_=schelling_1.update()
+        #write = "calculate_similarity race "+str(races)+": "+ str(schelling_1.calculate_similarity())+"\n"
+        #docs.write(write)
+        #print(docs.read())
+        titlefinal='Schelling Model with'+str(races)+'colors: Final State with Similarity Threshold '+str(similarity_threshold*100)+'%'
+        schelling_1.plot(titlefinal, ('schelling_2_ with '+str(races)+"color "+str(similarity_threshold*100)+'%''_medio.png'))
+
+        print("asdasdasdasdasdasdn ",schelling_1.calculate_similarity())
+        #schelling_1.plot(titlefinal, ('schelling_2_ with '+str(races)+"color "+str(similarity_threshold*100)+'%''_medio.png'))
+
+        x=[0]
+        y=[y[-1]]
+        plt.clf()
+        
+        schelling_1.similarity_threshold=0.40
+        schelling_1.test_threshold=0.60
+
+        x,y,j=schelling_1.update(x=x,y=y,j=1)
+
+        print("asdasdasdasdasdasdn ",schelling_1.calculate_similarity())
+        titlefinal='Schelling Model with'+str(races)+'colors: Final State with Similarity Threshold '+str(similarity_threshold*100)+'%'
+        schelling_1.plot(titlefinal, ('schelling_2_ with '+str(races)+"color "+str(similarity_threshold*100)+'%''_final.png'))
+
+
+        #titlefinal='Schelling Model with'+str(races)+'colors: Final State with Similarity Threshold '+str(schelling_1.similarity_threshold*100)+'%'
+        #schelling_1.plot(titlefinal, ('schelling_2_ with '+str(races)+"color "+str(schelling_1.similarity_threshold*100)+'%''_final.png'))
+        #schelling_1.satisfatory_percentage(i+1,similarity_threshold,empty_ratio)
+
+        #schelling_1.similarity_threshold=0.50
+        #schelling_1.test_threshold=0.60
+        #x,y=schelling_1.update(condition,x,y,j)
+    
+        plt.clf()
+
+        labeltext =  "race "+str(races)
+
+        plt.plot(x,y,label = labeltext) 
+        plt.xlabel("x - iterations") 
+        plt.ylabel("y - percentage similarity") 
 
 
 
 plt.clf()
-for i in range (2,8):
-    same_threshold_different_empty_happiness(races=i)
+
+change_threshold_in_middle_fase()
 
 plt.legend() 
-plt.savefig("happiness"+".png") 
+plt.savefig("similation3"+".png") 
