@@ -17,7 +17,7 @@ class Schelling:
         self.n_iterations = n_iterations
         self.empty_houses = []
         self.agents = {}
-        self.test_threshold = 0.0
+        self.test_threshold = 1.0
 
     
     def populate(self):
